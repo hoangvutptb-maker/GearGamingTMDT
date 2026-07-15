@@ -38,7 +38,8 @@
       "price": "2.590.000đ",
       "oldPrice": "3.790.000đ",
       "sale": "-32%",
-      "image": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=900&q=88"
+      "image": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=900&q=88",
+      "stock": 10
     },
     {
       "id": 2,
@@ -46,7 +47,8 @@
       "price": "1.690.000đ",
       "oldPrice": "2.190.000đ",
       "sale": "-23%",
-      "image": "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=900&q=88"
+      "image": "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=900&q=88",
+      "stock": 10
     },
     {
       "id": 3,
@@ -54,7 +56,8 @@
       "price": "3.190.000đ",
       "oldPrice": "3.990.000đ",
       "sale": "-20%",
-      "image": "https://images.unsplash.com/photo-1629429407759-01cd3d7cfb38?auto=format&fit=crop&w=900&q=88"
+      "image": "https://images.unsplash.com/photo-1629429407759-01cd3d7cfb38?auto=format&fit=crop&w=900&q=88",
+      "stock": 10
     },
     {
       "id": 4,
@@ -62,7 +65,8 @@
       "price": "2.890.000đ",
       "oldPrice": "3.590.000đ",
       "sale": "-19%",
-      "image": "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=900&q=88"
+      "image": "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=900&q=88",
+      "stock": 10
     }
   ]
 }

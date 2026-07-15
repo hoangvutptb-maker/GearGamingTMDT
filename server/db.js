@@ -39,11 +39,5 @@ async function connectDB() {
 }
 
 // Export module để các file API khác có thể dùng lại.
-const dbModule = { connectDB, sql }
-
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = dbModule
-}
-
 export { connectDB, sql }
-export default dbModule
+export default { connectDB, sql }

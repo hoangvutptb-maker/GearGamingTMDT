@@ -1,89 +1,57 @@
+import { useEffect, useState } from 'react'
 import { TrendingUp, ShoppingCart, Box, Users } from 'lucide-react'
+import { getDashboard } from './lib/api'
 
-/**
- * AdminDashboard - Trang tổng quan & thống kê
- * Hiển thị 4 thẻ chỉ số và bảng 5 đơn hàng mới nhất    
- */
 export default function AdminDashboard() {
-  // Dữ liệu thẻ chỉ số
+  const [dashboard, setDashboard] = useState(null)
+
+  useEffect(() => {
+    getDashboard()
+      .then(setDashboard)
+      .catch((error) => console.error('Không thể tải Dashboard:', error))
+  }, [])
+
+  const statistics = dashboard?.statistics || {
+    revenue: 0,
+    orders: 0,
+    products: 0,
+    customers: 0,
+  }
+  const recentOrders = dashboard?.recentOrders || []
   const statCards = [
     {
       title: 'Tổng doanh thu',
-      value: '145.290.000đ',
+      value: formatCurrency(statistics.revenue),
       icon: TrendingUp,
       color: 'green',
-      trend: '+12%',
     },
     {
       title: 'Đơn hàng mới',
-      value: '12',
+      value: statistics.orders,
       unit: 'đơn hàng',
       icon: ShoppingCart,
       color: 'yellow',
-      trend: '+5%',
     },
     {
       title: 'Sản phẩm đang bán',
-      value: '86',
+      value: statistics.products,
       unit: 'sản phẩm',
       icon: Box,
       color: 'blue',
-      trend: '+8%',
     },
     {
       title: 'Khách hàng đăng ký',
-      value: '1.240',
+      value: statistics.customers,
       unit: 'người',
       icon: Users,
       color: 'red',
-      trend: '+15%',
     },
   ]
 
-  // Mock dữ liệu 5 đơn hàng mới nhất
-  const recentOrders = [
-    {
-      id: 'ORD-001',
-      customer: 'Nguyễn Văn A',
-      time: '2 giờ trước',
-      amount: '12.590.000đ',
-      status: 'pending',
-    },
-    {
-      id: 'ORD-002',
-      customer: 'Trần Thị B',
-      time: '4 giờ trước',
-      amount: '8.290.000đ',
-      status: 'shipping',
-    },
-    {
-      id: 'ORD-003',
-      customer: 'Lê Văn C',
-      time: '6 giờ trước',
-      amount: '15.990.000đ',
-      status: 'completed',
-    },
-    {
-      id: 'ORD-004',
-      customer: 'Phạm Thị D',
-      time: '1 ngày trước',
-      amount: '5.690.000đ',
-      status: 'pending',
-    },
-    {
-      id: 'ORD-005',
-      customer: 'Hoàng Văn E',
-      time: '1 ngày trước',
-      amount: '22.190.000đ',
-      status: 'completed',
-    },
-  ]
-
-  // Hàm map status sang badge color
   const getStatusBadge = (status) => {
     const statusMap = {
       pending: { label: 'Chờ xử lý', color: '#FFC107' },
-      shipping: { label: 'Đang giao', color: '#0DD3FF' },
+      processing: { label: 'Đang xử lý', color: '#0DD3FF' },
       completed: { label: 'Hoàn thành', color: '#1ECC71' },
       cancelled: { label: 'Đã hủy', color: '#FF5252' },
     }
@@ -92,7 +60,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-dashboard">
-      {/* Grid thẻ chỉ số */}
       <div className="stats-grid">
         {statCards.map((card) => {
           const Icon = card.icon
@@ -105,14 +72,12 @@ export default function AdminDashboard() {
                 <p className="stat-label">{card.title}</p>
                 <h3 className="stat-value">{card.value}</h3>
                 {card.unit && <small className="stat-unit">{card.unit}</small>}
-                <span className="stat-trend">{card.trend}</span>
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Bảng đơn hàng mới nhất */}
       <div className="recent-orders">
         <div className="section-header">
           <h2>Đơn hàng mới nhất</h2>
@@ -134,9 +99,9 @@ export default function AdminDashboard() {
               return (
                 <tr key={order.id}>
                   <td className="order-id">{order.id}</td>
-                  <td>{order.customer}</td>
-                  <td className="order-time">{order.time}</td>
-                  <td className="order-amount">{order.amount}</td>
+                  <td>{order.fullname}</td>
+                  <td className="order-time">{formatDateTime(order.createdAt)}</td>
+                  <td className="order-amount">{formatCurrency(order.total)}</td>
                   <td>
                     <span
                       className="status-badge"
@@ -148,9 +113,31 @@ export default function AdminDashboard() {
                 </tr>
               )
             })}
+            {recentOrders.length === 0 && (
+              <tr>
+                <td colSpan="5">Chưa có đơn hàng.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
     </div>
   )
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(value || 0)
+}
+
+function formatDateTime(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Không xác định'
+  return new Intl.DateTimeFormat('vi-VN', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date)
 }

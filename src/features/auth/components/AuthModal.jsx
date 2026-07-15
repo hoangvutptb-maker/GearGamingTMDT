@@ -17,7 +17,7 @@ export default function AuthModal({ mode, onClose, onLogin, onSwitchMode }) {
     confirmPassword: '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { message, setMessage, handleLogin, handleRegister } = useAuth()
+  const { message, handleLogin, handleRegister } = useAuth()
   const isRegister = mode === 'register'
 
   // Cập nhật field

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import AdminSidebar from './AdminSidebar'
 import AdminHeader from './AdminHeader'
 import AdminDashboard from './AdminDashboard'
@@ -13,16 +13,13 @@ import ManageAccounts from './ManageAccounts'
 export default function AdminLayout({ currentUser, onLogout }) {
   const initialTab = currentUser?.role === 'staff' ? 'products' : 'dashboard'
   const [activeTab, setActiveTab] = useState(initialTab)
-
-  useEffect(() => {
-    if (currentUser?.role === 'staff' && activeTab === 'dashboard') {
-      setActiveTab('products')
-    }
-  }, [currentUser, activeTab])
+  const visibleTab = currentUser?.role === 'staff' && activeTab === 'dashboard'
+    ? 'products'
+    : activeTab
 
   // Hàm render nội dung dựa trên tab hiện tại
   const renderContent = () => {
-    switch (activeTab) {
+    switch (visibleTab) {
       case 'dashboard':
         return <AdminDashboard />
       case 'products':
@@ -39,7 +36,7 @@ export default function AdminLayout({ currentUser, onLogout }) {
   return (
     <div className="admin-container">
       <AdminSidebar
-        activeTab={activeTab}
+        activeTab={visibleTab}
         onTabChange={setActiveTab}
         currentUser={currentUser}
       />

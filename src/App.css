@@ -184,9 +184,25 @@ img {
   font-size: 16px;
 }
 
-.search-form svg {
-  margin-right: 17px;
+.search-submit {
+  width: 52px;
+  height: 100%;
+  display: grid;
+  place-items: center;
   flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.search-submit:hover,
+.search-submit:focus-visible {
+  background: #eff6ff;
+}
+
+.search-submit svg {
+  margin: 0;
 }
 
 .header-actions {

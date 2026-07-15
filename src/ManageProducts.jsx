@@ -1,56 +1,24 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Edit, Eye, EyeOff, Trash, X } from 'lucide-react'
+import { createProduct, deleteProduct, getProducts, updateProduct } from './lib/api'
+
+function normalizeProduct(product) {
+  return {
+    ...product,
+    category: product.category || '',
+    price: Number(String(product.price || '').replace(/[^\d]/g, '')) || 0,
+    stock: Number.isInteger(product.stock) ? product.stock : 0,
+    status: product.status === 'hidden' ? 'hidden' : 'active',
+    image: product.image || '',
+    specs: product.specs || {},
+  }
+}
 
 /**
- * ManageProducts - Trang quản lý sản phẩm CRUD
- * Mock data: danh sách sản phẩm với CRUD operations
+ * ManageProducts - Trang quản lý sản phẩm CRUD qua API.
  */
 export default function ManageProducts() {
-  // Mock dữ liệu sản phẩm ban đầu
-  const initialProducts = [
-    {
-      id: 1,
-      name: 'Laptop Gaming ASUS ROG G16',
-      category: 'Laptop Gaming',
-      price: '45.990.000',
-      stock: 12,
-      status: 'active',
-      image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=200&q=88',
-      specs: { cpu: 'Intel i9', gpu: 'RTX 4090', ram: '32GB' },
-    },
-    {
-      id: 2,
-      name: 'Bàn phím cơ AKKO 5075B Plus',
-      category: 'Bàn phím',
-      price: '1.690.000',
-      stock: 48,
-      status: 'active',
-      image: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=200&q=88',
-      specs: { switch: 'Akko Ocean Blue', layout: 'Gasket', rgb: 'RGB' },
-    },
-    {
-      id: 3,
-      name: 'Chuột Logitech G Pro X Superlight 2',
-      category: 'Chuột',
-      price: '3.190.000',
-      stock: 25,
-      status: 'active',
-      image: 'https://images.unsplash.com/photo-1629429407759-01cd3d7cfb38?auto=format&fit=crop&w=200&q=88',
-      specs: { weight: '63g', dpi: '32000', battery: '90h' },
-    },
-    {
-      id: 4,
-      name: 'Tai nghe HyperX Cloud III',
-      category: 'Tai nghe',
-      price: '2.890.000',
-      stock: 0,
-      status: 'hidden',
-      image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=200&q=88',
-      specs: { type: 'Over-ear', connection: 'Wireless', battery: '30h' },
-    },
-  ]
-
-  const [products, setProducts] = useState(initialProducts)
+  const [products, setProducts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({
@@ -63,7 +31,12 @@ export default function ManageProducts() {
     specs: { cpu: '', gpu: '', ram: '' },
   })
 
-  // Hàm mở form thêm mới
+  useEffect(() => {
+    getProducts()
+      .then((items) => setProducts(items.map(normalizeProduct)))
+      .catch((error) => alert(error.message))
+  }, [])
+
   const handleAddProduct = () => {
     setEditingId(null)
     setFormData({
@@ -78,64 +51,75 @@ export default function ManageProducts() {
     setShowForm(true)
   }
 
-  // Hàm mở form sửa
   const handleEditProduct = (product) => {
     setEditingId(product.id)
-    setFormData(product)
+    setFormData(normalizeProduct(product))
     setShowForm(true)
   }
 
-  // Hàm xử lý thay đổi input
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
+  const handleInputChange = (event) => {
+    const { name, value } = event.target
+    setFormData((current) => ({
+      ...current,
       [name]: value,
     }))
   }
 
-  // Hàm lưu sản phẩm (thêm mới hoặc sửa)
-  const handleSaveProduct = (e) => {
-    e.preventDefault()
+  const handleSaveProduct = async (event) => {
+    event.preventDefault()
 
-    if (editingId) {
-      // Cập nhật sản phẩm hiện tại
-      setProducts(
-        products.map((p) => (p.id === editingId ? { ...formData, id: editingId } : p))
-      )
-    } else {
-      // Thêm sản phẩm mới
-      setProducts([...products, { ...formData, id: Date.now() }])
+    try {
+      if (editingId !== null) {
+        const response = await updateProduct(editingId, formData)
+        const updatedProduct = normalizeProduct(response.product)
+        setProducts((current) => current.map((product) => (
+          product.id === editingId ? updatedProduct : product
+        )))
+      } else {
+        const response = await createProduct(formData)
+        setProducts((current) => [...current, normalizeProduct(response.product)])
+      }
+
+      setShowForm(false)
+    } catch (error) {
+      alert(error.message)
     }
-
-    setShowForm(false)
   }
 
-  // Hàm đảo ngược trạng thái (hiển thị/ẩn)
-  const handleToggleStatus = (id) => {
-    setProducts(
-      products.map((p) =>
-        p.id === id ? { ...p, status: p.status === 'active' ? 'hidden' : 'active' } : p
-      )
-    )
+  const handleToggleStatus = async (product) => {
+    try {
+      const response = await updateProduct(product.id, {
+        ...product,
+        status: product.status === 'active' ? 'hidden' : 'active',
+      })
+      const updatedProduct = normalizeProduct(response.product)
+      setProducts((current) => current.map((item) => (
+        item.id === product.id ? updatedProduct : item
+      )))
+    } catch (error) {
+      alert(error.message)
+    }
   }
 
-  // Hàm xóa sản phẩm
-  const handleDeleteProduct = (id) => {
-    setProducts(products.filter((p) => p.id !== id))
+  const handleDeleteProduct = async (id) => {
+    try {
+      await deleteProduct(id)
+      setProducts((current) => current.filter((product) => product.id !== id))
+    } catch (error) {
+      alert(error.message)
+    }
   }
 
   return (
     <div className="manage-products">
       <div className="products-header">
         <h2>Quản lý sản phẩm</h2>
-        <button className="btn-primary" onClick={handleAddProduct}>
+        <button className="btn-primary" onClick={handleAddProduct} type="button">
           <Plus size={18} />
           <span>Thêm sản phẩm</span>
         </button>
       </div>
 
-      {/* Bảng sản phẩm */}
       <div className="products-table-wrapper">
         <table className="products-table">
           <thead>
@@ -162,13 +146,11 @@ export default function ManageProducts() {
                   />
                 </td>
                 <td className="product-name">{product.name}</td>
-                <td>{product.category}</td>
-                <td className="product-price">{parseInt(product.price).toLocaleString('vi-VN')}đ</td>
+                <td>{product.category || 'Chưa phân loại'}</td>
+                <td className="product-price">{product.price.toLocaleString('vi-VN')}đ</td>
                 <td className="product-stock">{product.stock}</td>
                 <td>
-                  <span
-                    className={`status-badge ${product.status}`}
-                  >
+                  <span className={`status-badge ${product.status}`}>
                     {product.status === 'active' ? 'Hiển thị' : 'Ẩn'}
                   </span>
                 </td>
@@ -177,24 +159,23 @@ export default function ManageProducts() {
                     className="action-btn edit"
                     onClick={() => handleEditProduct(product)}
                     title="Chỉnh sửa"
+                    type="button"
                   >
                     <Edit size={16} />
                   </button>
                   <button
                     className="action-btn toggle"
-                    onClick={() => handleToggleStatus(product.id)}
+                    onClick={() => handleToggleStatus(product)}
                     title={product.status === 'active' ? 'Ẩn sản phẩm' : 'Hiển thị sản phẩm'}
+                    type="button"
                   >
-                    {product.status === 'active' ? (
-                      <Eye size={16} />
-                    ) : (
-                      <EyeOff size={16} />
-                    )}
+                    {product.status === 'active' ? <Eye size={16} /> : <EyeOff size={16} />}
                   </button>
                   <button
                     className="action-btn delete"
                     onClick={() => handleDeleteProduct(product.id)}
                     title="Xóa"
+                    type="button"
                   >
                     <Trash size={16} />
                   </button>
@@ -205,16 +186,12 @@ export default function ManageProducts() {
         </table>
       </div>
 
-      {/* Modal form thêm/sửa sản phẩm */}
       {showForm && (
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editingId ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</h3>
-              <button
-                className="modal-close"
-                onClick={() => setShowForm(false)}
-              >
+              <h3>{editingId !== null ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</h3>
+              <button className="modal-close" onClick={() => setShowForm(false)} type="button">
                 <X size={20} />
               </button>
             </div>
@@ -235,12 +212,7 @@ export default function ManageProducts() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Danh mục *</label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    required
-                  >
+                  <select name="category" value={formData.category} onChange={handleInputChange} required>
                     <option value="">Chọn danh mục</option>
                     <option value="Laptop Gaming">Laptop Gaming</option>
                     <option value="Bàn phím">Bàn phím</option>
@@ -276,11 +248,7 @@ export default function ManageProducts() {
                 </div>
                 <div className="form-group">
                   <label>Trạng thái *</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                  >
+                  <select name="status" value={formData.status} onChange={handleInputChange}>
                     <option value="active">Hiển thị</option>
                     <option value="hidden">Ẩn</option>
                   </select>
@@ -299,16 +267,8 @@ export default function ManageProducts() {
               </div>
 
               <div className="form-actions">
-                <button type="submit" className="btn-save">
-                  Lưu sản phẩm
-                </button>
-                <button
-                  type="button"
-                  className="btn-cancel"
-                  onClick={() => setShowForm(false)}
-                >
-                  Hủy
-                </button>
+                <button type="submit" className="btn-save">Lưu sản phẩm</button>
+                <button type="button" className="btn-cancel" onClick={() => setShowForm(false)}>Hủy</button>
               </div>
             </form>
           </div>

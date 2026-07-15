@@ -1,73 +1,51 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Lock, Unlock, X } from 'lucide-react'
+import { createAccount, getAccounts, updateAccount } from './lib/api'
 
 export default function AccountManagement() {
-  const [accounts, setAccounts] = useState([
-    {
-      id: 1,
-      fullname: 'Nguyễn Văn A',
-      email: 'admin@gearmax.com',
-      role: 'admin',
-      status: 'active',
-    },
-    {
-      id: 2,
-      fullname: 'Trần Thị B',
-      email: 'staff1@gearmax.com',
-      role: 'staff',
-      status: 'active',
-    },
-    {
-      id: 3,
-      fullname: 'Lê Văn C',
-      email: 'user1@gearmax.com',
-      role: 'user',
-      status: 'locked',
-    },
-  ])
+  const [accounts, setAccounts] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ fullname: '', email: '', password: '' })
+  const [formData, setFormData] = useState({ fullname: '', phone: '', email: '', password: '' })
+
+  useEffect(() => {
+    getAccounts()
+      .then(setAccounts)
+      .catch((error) => alert(error.message))
+  }, [])
 
   const handleAddStaff = () => {
-    setFormData({ fullname: '', email: '', password: '' })
+    setFormData({ fullname: '', phone: '', email: '', password: '' })
     setShowForm(true)
   }
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+  const handleInputChange = (event) => {
+    const { name, value } = event.target
+    setFormData((current) => ({ ...current, [name]: value }))
   }
 
-  const handleSaveStaff = (e) => {
-    e.preventDefault()
-    if (!formData.fullname || !formData.email || !formData.password) {
-      return
+  const handleSaveStaff = async (event) => {
+    event.preventDefault()
+
+    try {
+      const response = await createAccount({ ...formData, role: 'staff' })
+      setAccounts((current) => [...current, response.account])
+      setShowForm(false)
+    } catch (error) {
+      alert(error.message)
     }
-
-    setAccounts((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        fullname: formData.fullname,
-        email: formData.email,
-        role: 'staff',
-        status: 'active',
-      },
-    ])
-    setShowForm(false)
   }
 
-  const toggleAccountStatus = (id) => {
-    setAccounts((prev) =>
-      prev.map((account) =>
-        account.id === id
-          ? {
-              ...account,
-              status: account.status === 'active' ? 'locked' : 'active',
-            }
-          : account,
-      ),
-    )
+  const toggleAccountStatus = async (account) => {
+    try {
+      const response = await updateAccount(account.id, {
+        status: account.status === 'active' ? 'locked' : 'active',
+      })
+      setAccounts((current) => current.map((item) => (
+        item.id === account.id ? response.account : item
+      )))
+    } catch (error) {
+      alert(error.message)
+    }
   }
 
   return (
@@ -113,7 +91,7 @@ export default function AccountManagement() {
                   <button
                     className="action-btn toggle"
                     type="button"
-                    onClick={() => toggleAccountStatus(account.id)}
+                    onClick={() => toggleAccountStatus(account)}
                     title={account.status === 'active' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
                   >
                     {account.status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
@@ -127,7 +105,7 @@ export default function AccountManagement() {
 
       {showForm && (
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
               <h3>Thêm tài khoản Staff mới</h3>
               <button className="modal-close" type="button" onClick={() => setShowForm(false)}>
@@ -137,46 +115,23 @@ export default function AccountManagement() {
             <form className="product-form" onSubmit={handleSaveStaff}>
               <div className="form-group">
                 <label>Họ và tên</label>
-                <input
-                  type="text"
-                  name="fullname"
-                  value={formData.fullname}
-                  onChange={handleInputChange}
-                  placeholder="Nhập họ tên"
-                />
+                <input name="fullname" value={formData.fullname} onChange={handleInputChange} placeholder="Nhập họ tên" required />
+              </div>
+              <div className="form-group">
+                <label>Số điện thoại</label>
+                <input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="0901234567" required />
               </div>
               <div className="form-group">
                 <label>Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Nhập email"
-                />
+                <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Nhập email" required />
               </div>
               <div className="form-group">
                 <label>Mật khẩu</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Nhập mật khẩu"
-                />
+                <input type="password" name="password" value={formData.password} onChange={handleInputChange} placeholder="Nhập mật khẩu" required />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
-                <button className="btn-primary" type="submit">
-                  Lưu tài khoản
-                </button>
-                <button
-                  type="button"
-                  className="action-btn delete"
-                  onClick={() => setShowForm(false)}
-                  style={{ width: 'auto', padding: '10px 18px' }}
-                >
-                  Hủy
-                </button>
+                <button className="btn-primary" type="submit">Lưu tài khoản</button>
+                <button type="button" className="action-btn delete" onClick={() => setShowForm(false)} style={{ width: 'auto', padding: '10px 18px' }}>Hủy</button>
               </div>
             </form>
           </div>

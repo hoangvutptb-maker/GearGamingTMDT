@@ -227,8 +227,11 @@ function Header({ cartCount, currentUser, searchValue, onSearchChange, onHome, o
               value={searchValue}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Bạn cần tìm gì?"
+              aria-label="Tìm kiếm sản phẩm"
             />
-            <Search size={25} />
+            <button className="search-submit" type="submit" aria-label="Tìm kiếm">
+              <Search size={25} />
+            </button>
           </form>
 
           <nav className="header-actions">
@@ -466,7 +469,20 @@ function AuthModal({ mode, onClose, onLogin, onSwitchMode }) {
 
         <div className="auth-switch">
           {isRegister ? 'Đã có tài khoản?' : 'Chưa có tài khoản?'}
-          <button type="button" onClick={() => onSwitchMode(isRegister ? 'login' : 'register')}>
+          <button
+            type="button"
+            onClick={() => {
+              setMessage('')
+              setForm({
+                name: '',
+                email: '',
+                phone: '',
+                password: '',
+                confirmPassword: '',
+              })
+              onSwitchMode(isRegister ? 'login' : 'register')
+            }}
+          >
             {isRegister ? 'Đăng nhập ngay' : 'Đăng ký ngay'}
           </button>
         </div>
@@ -789,6 +805,48 @@ function ProductSection({ products, onAddToCart, onViewProduct, onToggleWishlist
   )
 }
 
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
+const searchAliases = {
+  bp: 'ban phim',
+  ck: 'chuot',
+  cpu: 'cpu',
+  lt: 'laptop',
+  ltg: 'laptop gaming',
+  mh: 'man hinh',
+  pc: 'pc',
+  ram: 'ram',
+  ssd: 'ssd',
+  tn: 'tai nghe',
+  vga: 'vga',
+}
+
+function matchesProductSearch(product, searchValue) {
+  const query = normalizeText(searchValue)
+  if (!query) {
+    return true
+  }
+
+  const haystack = normalizeText([
+    product.name,
+    product.category,
+    product.description,
+    ...(product.highlights || []),
+    ...(product.specs || []),
+  ].join(' '))
+  const expandedQuery = searchAliases[query] || query
+
+  return haystack.includes(expandedQuery) || expandedQuery.split(' ').every((term) => haystack.includes(term))
+}
+
 function parsePrice(price) {
   return Number(String(price).replace(/[^\d]/g, '')) || 0
 }
@@ -851,25 +909,45 @@ function ProductDetailPage({ product, wishlistItems, onBack, onAddToCart, onTogg
   )
 }
 
-function SearchResultsPage({ searchValue, products, onBack, onAddToCart, onViewProduct, onToggleWishlist, wishlistItems }) {
-  const normalized = searchValue.trim().toLowerCase()
-  const results = products.filter((product) => {
-    const haystack = [product.name, product.category, product.description].join(' ').toLowerCase()
-    return haystack.includes(normalized)
-  })
+function SearchResultsPage({ searchValue, products, isSearching, onBack, onSearch, onAddToCart, onViewProduct, onToggleWishlist, wishlistItems }) {
+  const normalized = normalizeText(searchValue)
+  const results = products.filter((product) => matchesProductSearch(product, searchValue))
+
+  const suggestionChips = ['laptop', 'chuột', 'màn hình', 'bàn phím', 'tai nghe']
 
   return (
     <main className="shop-container search-results-shell">
       <button type="button" className="detail-back" onClick={onBack}>← Quay lại</button>
-      <div className="auth-card" style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div className="auth-head">
-          <span>Kết quả tìm kiếm</span>
-          <h2>{normalized ? `Tìm thấy ${results.length} sản phẩm cho “${searchValue}”` : 'Nhập từ khóa để bắt đầu tìm kiếm'}</h2>
-          <p>Khám phá các sản phẩm phù hợp với nhu cầu của bạn trong hệ sinh thái GearMax.</p>
+      <div className="auth-card" style={{ maxWidth: 1100, margin: '0 auto', padding: 24, border: '1px solid #dbeafe', boxShadow: '0 16px 45px rgba(15, 23, 42, 0.08)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 16 }}>
+          <div>
+            <span style={{ color: '#0ea5e9', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 12 }}>Kết quả tìm kiếm</span>
+            <h2 style={{ margin: '6px 0 8px', color: '#0f172a' }}>{normalized ? `Tìm thấy ${results.length} sản phẩm cho “${searchValue.trim()}”` : 'Nhập từ khóa để bắt đầu tìm kiếm'}</h2>
+            <p style={{ margin: 0, color: '#475569' }}>Khám phá các sản phẩm phù hợp với nhu cầu của bạn trong hệ sinh thái GearMax.</p>
+            {isSearching ? <p style={{ margin: '8px 0 0', color: '#0ea5e9', fontWeight: 600 }}>Đang cập nhật kết quả...</p> : null}
+          </div>
+          {normalized ? (
+            <div style={{ background: '#f8fbff', border: '1px solid #dbeafe', borderRadius: 999, padding: '8px 12px', color: '#0f172a', fontWeight: 600 }}>
+              Từ khóa: {searchValue.trim()}
+            </div>
+          ) : null}
         </div>
-        {results.length === 0 ? (
-          <div className="empty-wishlist">Không tìm thấy sản phẩm phù hợp. Hãy thử từ khóa khác như “laptop”, “chuột” hoặc “màn hình”.</div>
-        ) : (
+
+        {normalized && results.length === 0 ? (
+          <div style={{ border: '1px dashed #cbd5e1', borderRadius: 16, padding: 24, textAlign: 'center', color: '#475569' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Không tìm thấy sản phẩm phù hợp</div>
+            <p style={{ margin: '0 0 12px' }}>Hãy thử từ khóa khác như “laptop”, “chuột” hoặc “màn hình”.</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {suggestionChips.map((chip) => (
+                <button key={chip} type="button" onClick={() => onSearch(chip)} style={{ border: '1px solid #cbd5e1', borderRadius: 999, padding: '6px 10px', background: '#fff', cursor: 'pointer' }}>
+                  {chip}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {results.length > 0 ? (
           <div className="product-row results-grid">
             {results.map((product) => (
               <article className="product-card" key={product.id}>
@@ -900,7 +978,7 @@ function SearchResultsPage({ searchValue, products, onBack, onAddToCart, onViewP
               </article>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
     </main>
   )
@@ -1039,13 +1117,13 @@ function CartDrawer({ cartItems, onClose, onDecrease, onIncrease, onRemove, onCh
           <>
             <div className="cart-list">
               {cartItems.map((item) => (
-                <article className="cart-item" key={item.name}>
+                <article className="cart-item" key={item.id}>
                   <img src={item.image} alt={item.name} />
                   <div>
                     <h3>{item.name}</h3>
                     <strong>{item.price}</strong>
                     <div className="cart-controls">
-                      <button type="button" onClick={() => onDecrease(item.name)}>
+                      <button type="button" onClick={() => onDecrease(item.id)}>
                         -
                       </button>
                       <span>{item.quantity}</span>
@@ -1055,7 +1133,7 @@ function CartDrawer({ cartItems, onClose, onDecrease, onIncrease, onRemove, onCh
                       <button
                         className="remove-cart"
                         type="button"
-                        onClick={() => onRemove(item.name)}
+                        onClick={() => onRemove(item.id)}
                         aria-label={`Xóa ${item.name}`}
                       >
                         <Trash2 size={16} />
@@ -1121,6 +1199,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null)
   const [products, setProducts] = useState(fallbackProducts)
   const [searchValue, setSearchValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Product & checkout UI state
   const [selectedProduct, setSelectedProduct] = useState(null)
@@ -1150,20 +1229,48 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const nextQuery = searchValue.trim()
+    const timer = window.setTimeout(() => {
+      setSearchQuery(nextQuery)
+      setShowSearchResults(Boolean(nextQuery))
+
+      if (!nextQuery) {
+        return
+      }
+
+      setShowCheckoutSuccess(false)
+      setActiveCategory(null)
+      setShowAccount(false)
+      setShowWishlist(false)
+      setIsProductDetailPage(false)
+    }, nextQuery ? 300 : 0)
+
+    return () => window.clearTimeout(timer)
+  }, [searchValue])
+
+  useEffect(() => {
     const token = localStorage.getItem('gearmax_token')
     if (!token) {
-      setCurrentUser(null)
       return
     }
 
+    let isCurrent = true
     getCurrentUser(token)
       .then((response) => {
-        setCurrentUser({ ...response.user, token })
+        if (isCurrent) {
+          setCurrentUser({ ...response.user, token })
+        }
       })
       .catch(() => {
-        localStorage.removeItem('gearmax_token')
-        setCurrentUser(null)
+        if (isCurrent) {
+          localStorage.removeItem('gearmax_token')
+          setCurrentUser(null)
+        }
       })
+
+    return () => {
+      isCurrent = false
+    }
   }, [])
 
   useEffect(() => {
@@ -1181,7 +1288,7 @@ function App() {
       return
     }
 
-    getCart(currentUser.id)
+    getCart()
       .then((response) => {
         setCartItems(response.items || [])
       })
@@ -1189,7 +1296,7 @@ function App() {
         setCartItems([])
       })
 
-    getOrders(currentUser.id)
+    getOrders()
       .then((response) => {
         setOrders(response.orders || [])
       })
@@ -1210,6 +1317,14 @@ function App() {
     setAuthMode(null)
   }
 
+  const handleOpenCart = () => {
+    if (!currentUser?.id) {
+      setAuthMode('login')
+      return
+    }
+    setIsCartOpen(true)
+  }
+
   const handleLogout = () => {
     localStorage.removeItem('gearmax_current_user')
     localStorage.removeItem('gearmax_token')
@@ -1226,38 +1341,47 @@ function App() {
   }
 
   const saveCart = async (nextCart) => {
-    setCartItems(nextCart)
-    if (currentUser?.id) {
-      try {
-        await saveCartApi(currentUser.id, nextCart)
-      } catch {
-        // ignore api sync failure and keep local state
-      }
-    } else {
-      localStorage.setItem('gearmax_cart', JSON.stringify(nextCart))
+    if (!currentUser?.id) {
+      setAuthMode('login')
+      return false
+    }
+
+    try {
+      const response = await saveCartApi(nextCart)
+      setCartItems(response.items || [])
+      return true
+    } catch (error) {
+      alert(error.message)
+      return false
     }
   }
 
   const handleAddToCart = async (product) => {
-    const nextCart = cartItems.some((item) => item.name === product.name)
+    if (!currentUser?.id) {
+      setAuthMode('login')
+      return
+    }
+
+    const nextCart = cartItems.some((item) => item.id === product.id)
       ? cartItems.map((item) =>
-          item.name === product.name ? { ...item, quantity: item.quantity + 1 } : item,
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
         )
       : [...cartItems, { ...product, quantity: 1 }]
 
-    await saveCart(nextCart)
-    setIsCartOpen(true)
+    if (await saveCart(nextCart)) {
+      setIsCartOpen(true)
+    }
   }
 
-  const handleDecreaseCart = async (name) => {
+  const handleDecreaseCart = async (id) => {
     const nextCart = cartItems
-      .map((item) => (item.name === name ? { ...item, quantity: item.quantity - 1 } : item))
+      .map((item) => (item.id === id ? { ...item, quantity: item.quantity - 1 } : item))
       .filter((item) => item.quantity > 0)
     await saveCart(nextCart)
   }
 
-  const handleRemoveCart = async (name) => {
-    await saveCart(cartItems.filter((item) => item.name !== name))
+  const handleRemoveCart = async (id) => {
+    await saveCart(cartItems.filter((item) => item.id !== id))
   }
 
   const handleToggleWishlist = (product) => {
@@ -1268,9 +1392,14 @@ function App() {
     localStorage.setItem('gearmax_wishlist', JSON.stringify(nextWishlist))
   }
 
+  const handleSearchChange = (value) => {
+    setSearchValue(value)
+  }
+
   const handleSearchSubmit = (value) => {
     const nextValue = value.trim()
     setSearchValue(nextValue)
+    setSearchQuery(nextValue)
     setShowSearchResults(Boolean(nextValue))
     setShowCheckoutSuccess(false)
     setActiveCategory(null)
@@ -1293,9 +1422,8 @@ function App() {
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const filteredProducts = useMemo(() => {
-    const searchText = searchValue.trim().toLowerCase()
     const list = products.filter((product) => {
-      const matchesSearch = !searchText || [product.name, product.category, product.description].join(' ').toLowerCase().includes(searchText)
+      const matchesSearch = matchesProductSearch(product, searchValue)
       const matchesFilter = productFilter === 'all'
         ? true
         : productFilter === 'featured'
@@ -1322,7 +1450,7 @@ function App() {
           cartCount={cartCount}
           currentUser={currentUser}
           searchValue={searchValue}
-          onSearchChange={setSearchValue}
+          onSearchChange={handleSearchChange}
           onHome={handleBackToShop}
           onOpenAuth={() => {
             if (currentUser) {
@@ -1331,7 +1459,7 @@ function App() {
               setAuthMode('login')
             }
           }}
-          onOpenCart={() => setIsCartOpen(true)}
+          onOpenCart={handleOpenCart}
           onOpenWishlist={() => setShowWishlist(true)}
           onLogout={handleLogout}
           wishlistCount={wishlist.length}
@@ -1357,7 +1485,7 @@ function App() {
           cartCount={cartCount}
           currentUser={currentUser}
           searchValue={searchValue}
-          onSearchChange={setSearchValue}
+          onSearchChange={handleSearchChange}
           onHome={() => { setActiveCategory(null); setIsProductDetailPage(false); setSelectedProduct(null) }}
           onOpenAuth={() => {
             if (currentUser) {
@@ -1366,7 +1494,7 @@ function App() {
               setAuthMode('login')
             }
           }}
-          onOpenCart={() => setIsCartOpen(true)}
+          onOpenCart={handleOpenCart}
           onOpenWishlist={() => setShowWishlist(true)}
           onLogout={handleLogout}
           wishlistCount={wishlist.length}
@@ -1391,7 +1519,7 @@ function App() {
           cartCount={cartCount}
           currentUser={currentUser}
           searchValue={searchValue}
-          onSearchChange={setSearchValue}
+          onSearchChange={handleSearchChange}
           onHome={() => { setActiveCategory(null); setShowSearchResults(false) }}
           onOpenAuth={() => {
             if (currentUser) {
@@ -1400,16 +1528,18 @@ function App() {
               setAuthMode('login')
             }
           }}
-          onOpenCart={() => setIsCartOpen(true)}
+          onOpenCart={handleOpenCart}
           onOpenWishlist={() => setShowWishlist(true)}
           onLogout={handleLogout}
           wishlistCount={wishlist.length}
           onSearchSubmit={handleSearchSubmit}
         />
         <SearchResultsPage
-          searchValue={searchValue}
+          searchValue={searchQuery}
           products={products}
+          isSearching={searchValue.trim() !== searchQuery}
           onBack={() => setShowSearchResults(false)}
+          onSearch={handleSearchSubmit}
           onAddToCart={handleAddToCart}
           onViewProduct={(product) => { setSelectedProduct(product); setIsProductDetailPage(true) }}
           onToggleWishlist={handleToggleWishlist}
@@ -1427,7 +1557,7 @@ function App() {
           cartCount={cartCount}
           currentUser={currentUser}
           searchValue={searchValue}
-          onSearchChange={setSearchValue}
+          onSearchChange={handleSearchChange}
           onHome={() => { setActiveCategory(null); setShowWishlist(false) }}
           onOpenAuth={() => {
             if (currentUser) {
@@ -1436,7 +1566,7 @@ function App() {
               setAuthMode('login')
             }
           }}
-          onOpenCart={() => setIsCartOpen(true)}
+          onOpenCart={handleOpenCart}
           onOpenWishlist={() => setShowWishlist(true)}
           onLogout={handleLogout}
           wishlistCount={wishlist.length}
@@ -1455,10 +1585,10 @@ function App() {
           cartCount={cartCount}
           currentUser={currentUser}
           searchValue={searchValue}
-          onSearchChange={setSearchValue}
+          onSearchChange={handleSearchChange}
           onHome={() => { setActiveCategory(null); setShowAccount(false) }}
           onOpenAuth={() => setAuthMode('login')}
-          onOpenCart={() => setIsCartOpen(true)}
+          onOpenCart={handleOpenCart}
           onOpenWishlist={() => setShowWishlist(true)}
           onLogout={handleLogout}
           wishlistCount={wishlist.length}
@@ -1484,7 +1614,7 @@ function App() {
         cartCount={cartCount}
         currentUser={currentUser}
         searchValue={searchValue}
-        onSearchChange={setSearchValue}
+        onSearchChange={handleSearchChange}
         onHome={handleHome}
         onOpenAuth={() => {
           if (currentUser) {
@@ -1493,7 +1623,7 @@ function App() {
             setAuthMode('login')
           }
         }}
-        onOpenCart={() => setIsCartOpen(true)}
+        onOpenCart={handleOpenCart}
         onOpenWishlist={() => setShowWishlist(true)}
         onLogout={handleLogout}
         wishlistCount={wishlist.length}
@@ -1580,12 +1710,12 @@ function App() {
                   total: cartItems.reduce((sum, item) => sum + parsePrice(item.price) * item.quantity, 0),
                 }
                 try {
-                  await placeOrder(payload)
+                  const response = await placeOrder(payload)
                   await saveCart([])
-                  setLatestOrder(payload)
+                  setLatestOrder(response.order)
                   setIsCheckoutOpen(false)
                   if (currentUser) {
-                    setOrders((prev) => [{ id: payload.userId, ...payload, total: payload.total, status: 'pending' }, ...prev])
+                    setOrders((prev) => [response.order, ...prev])
                   }
                   setSelectedProduct(null)
                   setIsProductDetailPage(false)
