@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+<<<<<<< HEAD
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
@@ -1146,3 +1147,11 @@ const server = createServer(async (req, res) => {
 server.listen(port, () => {
   console.log(`GearGamingTMDT API listening on http://localhost:${port}`)
 })
+=======
+import { handleRequest } from './routes/index.js'
+
+const port = Number(process.env.PORT || 3001)
+const server = createServer(handleRequest)
+
+server.listen(port, () => console.log(`GearGamingTMDT API listening on http://localhost:${port}`))
+>>>>>>> a7fb5f5 (Sprint 11 - Backend architecture refactor)
