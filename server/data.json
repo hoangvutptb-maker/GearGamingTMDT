@@ -1,0 +1,72 @@
+{
+  "users": [
+    {
+      "id": "admin-1",
+      "fullname": "Admin Gearmax",
+      "phone": "0123456789",
+      "email": "admin@gearmax.com",
+      "password": "admin123",
+      "role": "admin"
+    },
+    {
+      "id": "staff-1",
+      "fullname": "Staff Gearmax",
+      "phone": "0123456790",
+      "email": "staff@gearmax.com",
+      "password": "staff123",
+      "role": "staff"
+    }
+  ],
+  "sessions": [
+    {
+      "token": "936b74b4-2ac3-484e-9c00-ebee8ad45936",
+      "userId": "admin-1",
+      "createdAt": "2026-07-09T02:12:27.790Z"
+    },
+    {
+      "token": "3da2b7fe-a6c2-41a1-860c-b5692552435b",
+      "userId": "staff-1",
+      "createdAt": "2026-07-09T02:13:22.409Z"
+    }
+  ],
+  "carts": [],
+  "orders": [],
+  "products": [
+    {
+      "id": 1,
+      "name": "Màn hình ViewSonic VX2528 25\" IPS 180Hz",
+      "price": "2.590.000đ",
+      "oldPrice": "3.790.000đ",
+      "sale": "-32%",
+      "image": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=900&q=88",
+      "stock": 10
+    },
+    {
+      "id": 2,
+      "name": "Bàn phím cơ AKKO 5075B Plus Blue Ocean",
+      "price": "1.690.000đ",
+      "oldPrice": "2.190.000đ",
+      "sale": "-23%",
+      "image": "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=900&q=88",
+      "stock": 10
+    },
+    {
+      "id": 3,
+      "name": "Chuột Logitech G Pro X Superlight 2",
+      "price": "3.190.000đ",
+      "oldPrice": "3.990.000đ",
+      "sale": "-20%",
+      "image": "https://images.unsplash.com/photo-1629429407759-01cd3d7cfb38?auto=format&fit=crop&w=900&q=88",
+      "stock": 10
+    },
+    {
+      "id": 4,
+      "name": "Tai nghe HyperX Cloud III Wireless",
+      "price": "2.890.000đ",
+      "oldPrice": "3.590.000đ",
+      "sale": "-19%",
+      "image": "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=900&q=88",
+      "stock": 10
+    }
+  ]
+}
